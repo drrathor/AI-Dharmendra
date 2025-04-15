@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Cropper from 'react-easy-crop';
 import { BrandForm } from '@/components/BrandForm';
 import { AdPreview } from '@/components/AdPreview';
 import { UploadArea } from '@/components/UploadArea';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Home() {
   const [referenceAd, setReferenceAd] = useState('');
@@ -21,6 +21,8 @@ export default function Home() {
   const [apiKey, setApiKey] = useState('');
   const [showApiKey, setShowApiKey] = useState(false);
   const [isApiKeySaved, setIsApiKeySaved] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
   // Handle localStorage after mount
   useEffect(() => {
@@ -29,6 +31,19 @@ export default function Home() {
       setApiKey(savedApiKey);
       setIsApiKeySaved(true);
     }
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
   const handleSaveApiKey = () => {
@@ -256,7 +271,7 @@ export default function Home() {
                       repeatType: "reverse"
                     }}
                   >
-                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                    <path d="M12 2L2 7l10 5 10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
                   </motion.svg>
                 </motion.div>
                 <div>
@@ -420,17 +435,72 @@ export default function Home() {
               <label className="block text-sm font-medium text-gray-700">
                 Ad Format
               </label>
-              <select
-                value={format}
-                onChange={(e) => setFormat(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-lg"
-              >
-                {formats.map((f) => (
-                  <option key={f.value} value={f.value}>
-                    {f.label}
-                  </option>
-                ))}
-              </select>
+              <div className="relative" ref={dropdownRef}>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className="w-full p-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all flex items-center justify-between"
+                >
+                  <span className="text-gray-700">
+                    {formats.find(f => f.value === format)?.label}
+                  </span>
+                  <motion.div
+                    animate={{ rotate: isDropdownOpen ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <svg
+                      className="w-5 h-5 text-gray-500"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </motion.div>
+                </motion.button>
+
+                <AnimatePresence>
+                  {isDropdownOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute z-10 w-full mt-2 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden"
+                    >
+                      {formats.map((f) => (
+                        <motion.button
+                          key={f.value}
+                          whileHover={{ backgroundColor: 'rgba(147, 51, 234, 0.1)' }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => {
+                            setFormat(f.value);
+                            setIsDropdownOpen(false);
+                          }}
+                          className={`w-full px-4 py-3 text-left transition-colors ${
+                            format === f.value
+                              ? 'bg-purple-100 text-purple-700'
+                              : 'text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`w-2 h-2 rounded-full ${
+                              format === f.value ? 'bg-purple-500' : 'bg-gray-300'
+                            }`} />
+                            <span>{f.label}</span>
+                          </div>
+                        </motion.button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </motion.div>
 
             <motion.div
